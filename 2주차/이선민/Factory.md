@@ -1,10 +1,11 @@
 ## Factory 패턴이란?
 - `new` 키워드를 사용하지 않고, **함수 호출**만으로 객체를 생성하는 패턴
 - 동일한 프로퍼티를 가진 여러 객체를 효율적으로 만들어낼 수 있다
+- 기본적으로 팩토리 패턴은 심플 팩토리 패턴, 팩토리 메서드 패턴, 추상 팩토리 패턴 세가지가 있다
 
 ## Factory 패턴 구현
 
-### 기본 형태
+### 기본 형태 (심플 팩토리 패턴)
 - 팩토리 함수는 매번 새로운 객체를 반환한다
 - ES6 화살표 함수로 간결하게 구현 가능
 
@@ -34,7 +35,7 @@ console.log(user1.fullName()); // "John Doe"
 console.log(user2.fullName()); // "Jane Doe"
 ```
 
-### 동적 키-값 객체 생성
+#### 동적 키-값 객체 생성
 - 배열이나 동적 데이터를 기반으로 객체를 생성할 때 유용하다
 
 ```javascript
@@ -45,7 +46,127 @@ const createObjectFromArray = ([key, value]) => ({
 createObjectFromArray(['name', 'John']); // { name: "John" }
 ```
 
-## 장단점
+### 팩토리 메서드 패턴
+- 객체 생성을 서브클래스에 위임하는 패턴
+- 기반 클래스는 **어떤 객체를 만들지 모르고**, 서브클래스가 결정한다
+
+```javascript
+// 기반 클래스 — createTransport()를 서브클래스에 위임
+class DeliveryService {
+  createTransport() {
+    throw new Error('서브클래스에서 구현해야 합니다');
+  }
+
+  deliver(item) {
+    const transport = this.createTransport(); // 팩토리 메서드 호출
+    transport.move(item);
+  }
+}
+
+// 서브클래스들이 각각 다른 객체를 생성
+class TruckDelivery extends DeliveryService {
+  createTransport() {
+    return { move: (item) => console.log(`트럭으로 ${item} 배송`) };
+  }
+}
+
+class ShipDelivery extends DeliveryService {
+  createTransport() {
+    return { move: (item) => console.log(`배로 ${item} 배송`) };
+  }
+}
+
+// 사용 — deliver() 로직은 동일, 무엇으로 배송할지는 서브클래스가 결정
+new TruckDelivery().deliver('TV');  // 트럭으로 TV 배송
+new ShipDelivery().deliver('TV');   // 배로 TV 배송
+```
+
+## 추상 팩토리 패턴
+- 관련된 객체 **세트**를 일관되게 생성하는 패턴
+- 추상 팩토리 인터페이스를 정의하고, Implement 팩토리가 이를 구현한다
+
+```javascript
+// 추상 팩토리 — JS에는 interface가 없으니 기반 클래스로 대체
+class ThemeFactory {
+  createButton(label) {
+    throw new Error('createButton을 구현해야 합니다');
+  }
+  createInput(placeholder) {
+    throw new Error('createInput을 구현해야 합니다');
+  }
+}
+
+// 구체 팩토리 1 — 추상 팩토리를 구현
+class LightThemeFactory extends ThemeFactory {
+  createButton(label) {
+    return { render: () => `[Light 버튼: ${label}]` };
+  }
+  createInput(placeholder) {
+    return { render: () => `[Light 인풋: ${placeholder}]` };
+  }
+}
+
+// 구체 팩토리 2 — 같은 인터페이스를 구현
+class DarkThemeFactory extends ThemeFactory {
+  createButton(label) {
+    return { render: () => `[Dark 버튼: ${label}]` };
+  }
+  createInput(placeholder) {
+    return { render: () => `[Dark 인풋: ${placeholder}]` };
+  }
+}
+
+// 클라이언트 — ThemeFactory 타입만 알면 됨
+function renderUI(factory) {
+  const button = factory.createButton('확인');
+  const input = factory.createInput('이름');
+  console.log(button.render());
+  console.log(input.render());
+}
+
+renderUI(new DarkThemeFactory());
+// [Dark 버튼: 확인]
+// [Dark 인풋: 이름]
+```
+
+### JavaScript에서의 한계: 덕 타이핑
+- JS에서는 `ThemeFactory`를 상속하지 않아도 `createButton`, `createInput`만 있으면 동작한다
+- 즉 아래처럼 아무 객체나 넘겨도 에러 없이 실행됨
+
+```javascript
+// ThemeFactory를 상속하지 않은 그냥 객체
+const fakeFactory = {
+  createButton: (label) => ({ render: () => `[Fake: ${label}]` }),
+  createInput: (placeholder) => ({ render: () => `[Fake: ${placeholder}]` }),
+};
+
+renderUI(fakeFactory); // 정상 동작 — 인터페이스 강제가 안 됨
+```
+
+- TypeScript의 interface를 사용하면 이를 컴파일 타임에 강제할 수 있다
+
+```typescript
+interface UIComponent {
+  render(): string;
+}
+
+interface ThemeFactory {
+  createButton(label: string): UIComponent;
+  createInput(placeholder: string): UIComponent;
+}
+
+// 메서드를 빼먹으면 컴파일 에러
+class DarkThemeFactory implements ThemeFactory {
+  createButton(label: string) {
+    return { render: () => `[Dark 버튼: ${label}]` };
+  }
+  // createInput 빼먹으면 → ❌ 컴파일 에러
+}
+```
+
+
+
+## 자바스크립트에서 함수로 구현한 팩토리 패턴의 장단점
 ### 1. 클로저를 활용해 진짜 Private 변수를 만들 수 있다
 ![alt text](image.png)
 ```javascript
