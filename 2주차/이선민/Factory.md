@@ -45,7 +45,7 @@ const createObjectFromArray = ([key, value]) => ({
 createObjectFromArray(['name', 'John']); // { name: "John" }
 ```
 
-## 클래스와 다른점?
+## 장단점
 ### 1. 클로저를 활용해 진짜 Private 변수를 만들 수 있다
 ![alt text](image.png)
 ```javascript
@@ -157,8 +157,39 @@ const createUser = ({ firstName, lastName, email }) => ({
 
 ## Factory 패턴 예시
 
+### React 커스텀 훅
+- 커스텀 훅은 호출할 때마다 상태와 로직이 담긴 새로운 객체를 반환한다
+
+```javascript
+function useForm(initialValues) {
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState({});
+
+  const handleChange = (e) => {
+    setValues({ ...values, [e.target.name]: e.target.value });
+  };
+
+  const reset = () => setValues(initialValues);
+
+  // 팩토리처럼 매번 새로운 상태 + 메서드 세트를 반환
+  return { values, errors, handleChange, reset, setErrors };
+}
+
+// 사용 — 각 컴포넌트가 독립적인 폼 상태를 가짐
+function LoginForm() {
+  const { values, handleChange, reset } = useForm({ email: '', password: '' });
+  return <input name="email" value={values.email} onChange={handleChange} />;
+}
+
+function SignupForm() {
+  const { values, handleChange } = useForm({ name: '', email: '' });
+  return <input name="name" value={values.name} onChange={handleChange} />;
+}
+```
+
 ### 설정에 따른 객체 생성
 - 환경(개발/운영)이나 역할(관리자/일반)에 따라 다른 설정의 객체를 생성
+- ex. Logger
 
 ```javascript
 const createLogger = (env) => {
