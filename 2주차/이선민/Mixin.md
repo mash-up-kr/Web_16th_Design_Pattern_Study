@@ -55,8 +55,45 @@ pet1.sleep(); // Sleeping!
 ```
 
 ## 실제 사용 사례
+
+### Window 객체
 - 브라우저의 **Window 객체**가 대표적인 Mixin 사례
 - `setTimeout`, `setInterval`, `indexedDB` 같은 프로퍼티들은 WindowOrWorkerGlobalScope, WindowEventHandler 등의 Mixin으로부터 제공된다
+
+### CSS-in-JS에서의 스타일 Mixin
+- styled-components의 `css` 헬퍼로 재사용 가능한 스타일 조각을 만들고, 여러 컴포넌트에 주입하는 패턴
+- prototype 대신 **스타일 문자열**을 합성하는 방식의 Mixin
+
+```javascript
+import { css } from 'styled-components';
+
+// Mixin 정의 — 재사용 가능한 스타일 조각
+export const displayCenter = css`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+export const displayColumn = css`
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+`;
+
+// 여러 컴포넌트에서 Mixin을 주입해서 사용
+export const MainTopBar = styled.header`
+  background-color: ${COLORS.WHITE};
+  height: 61px;
+  width: 100%;
+  ${displayColumn}  // Mixin 주입
+`;
+
+export const Modal = styled.div`
+  width: 400px;
+  height: 300px;
+  ${displayCenter}  // 같은 Mixin을 다른 컴포넌트에도 주입
+`;
+```
 
 ## 장점
 - 상속 계층 없이 기능을 추가할 수 있다
@@ -89,26 +126,3 @@ new Dog('Daisy').greet(); // 'Hello from B' — 조용히 덮어써짐
   - **HOC (고차 컴포넌트)** — 컴포넌트를 감싸서 기능 추가
   - **Hooks** — 현재 표준. 로직 재사용의 주요 방법
 
-```javascript
-// Mixin이 하던 일을 Hook으로 대체
-function useWindowSize() {
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setSize({ width: window.innerWidth, height: window.innerHeight });
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  return size;
-}
-
-// 어떤 컴포넌트에서든 재사용
-function Header() {
-  const { width } = useWindowSize();
-  return <header>{width > 768 ? '데스크톱' : '모바일'}</header>;
-}
-```
