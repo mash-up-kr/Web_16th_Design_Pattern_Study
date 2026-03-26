@@ -377,3 +377,7 @@ const api = createFetcher({
 api.get('/users');
 api.post('/users', { name: '선민' });
 ```
+
+## 참고 자료
+- https://coor.tistory.com/51
+- [테코톡-팩토리 패턴](https://www.youtube.com/watch?v=bxlNOb5PDS8&t=324s)
