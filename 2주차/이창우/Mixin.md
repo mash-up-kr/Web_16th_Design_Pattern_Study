@@ -52,7 +52,7 @@
 
 React custom hooks ⇒ 하나의 컴포넌트에서 여러가지 훅에서 처리하는 기능 단위들을 결합함
 
-### 믹스인 패턴 활용 - Socket.io
+### 믹스인 패턴 활용 - component-emitter ( Socket.IO )
 
 [socket.io](http://socket.io) 는 이벤트를 발생시키고 구독하는 기능이 여러개 있음 Socket, server, client, namespace ..
 
@@ -118,8 +118,8 @@ Emitter.prototype.off = function(event, fn) {
   return this;
 };
 ```
-
-그래서 이벤트 기능을 Emitter 라는 덩어리로 만들어 놓고, 필요한 객체에 섞어 넣는 것 ⇒ 믹스인
+그래서 component-emitter 라이브러리를 사용해서
+이벤트 기능을 Emitter 라는 덩어리로 만들어 놓고, 필요한 객체에 섞어 넣음 ⇒ 믹스인
 
 ```tsx
 // 방법 1: 일반 객체에 섞기
@@ -148,6 +148,7 @@ emitter.emit('ping');  // "pong"
 ```
 
 ---
+1번, 2번은 믹스인 예시 3번은 Emitter 인스턴스를 직접 사용하는 방식
 
 ### `Emitter(obj)` 호출 전후 비교
 ```
@@ -163,25 +164,7 @@ Emitter(user) 실행 — for...in으로 프로토타입 복사
   once: [Function],    ← Emitter에서 복사됨
 }
 ```
-
-component-emitter 라이브러리를 사용하고 있는데, 해당 기능은 믹스인을 지원
-
-```tsx
-// Socket.IO 서버 — socket.io/lib/socket.ts
-// Socket 클래스가 Emitter를 extends해서 사용
-export class Socket extends Emitter {
-  // on, emit, off를 상속받아 이벤트 처리
-  // ...
-}
-
-// Socket.IO 클라이언트 — socket.io-client/lib/socket.ts
-export class Socket extends Emitter {
-  // 클라이언트 소켓도 동일
-  // ...
-}
-```
-
-( 근데 실제 구현은 상속으로 함.. )
+상속이 아니라, 기존 객체에 이벤트 기능을 직접 주입하는 방식! 
 
 ```tsx
 // 서버
