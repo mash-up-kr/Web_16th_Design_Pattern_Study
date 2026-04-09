@@ -49,6 +49,57 @@ class Input extends React.Component {
 생명주기 메서드에 로직이 산재되어 관련 코드가 분리된다. 예를 들어 resize 이벤트 처리가 `componentDidMount`와 `componentWillUnmount`에 나뉘어 관리된다.
 ![alt text](image.png)
 
+```javascript
+componentDidUpdate (prevProps, prevState) {
+    // 포커스 지정
+		if(prevProps.downloadEula !== this.props.downloadEula && this.props.downloadEula !== 'loading' && !Spotlight.getCurrent()) {
+			Spotlight.focus('eula_next_btn');
+		}
+
+    // 인터넷 미연결
+		if (prevProps.internet !== this.props.internet && !this.props.internet && !this.state.networkErrorPopupOpen) {
+			this.setState({
+        networkErrorPopupOpen: true,
+      })
+		}
+
+    // 인터넷은 연결되었으나 약관 다운로드 실패시
+		if (prevProps.downloadEula !== this.props.downloadEula && this.props.downloadEula === 'fail' && !this.state.failedPopupOpen && this.props.internet) {
+			this.setState({
+        failedPopupOpen: true,
+      });
+		}
+	}
+```
+
+`useEffect`로 변환하면 관심사별로 분리된다.
+
+```javascript
+// 포커스 지정 — 매 렌더 후 실행
+useEffect(() => {
+  if (downloadEula !== "loading" && !Spotlight.getCurrent()) {
+    Spotlight.focus('eula_next_btn')
+  }
+}, [downloadEula])
+
+// 인터넷 미연결 — internet이 바뀔 때만 실행
+useEffect(() => {
+  if (!internet && !networkErrorPopupOpen) {
+    setNetworkErrorPopupOpen(true)
+  }
+}, [internet])
+
+// 약관 다운로드 실패 — downloadEula가 바뀔 때만 실행
+useEffect(() => {
+  if (downloadEula === 'fail' && !failedPopupOpen && internet) {
+    setFailedPopupOpen(true)
+  }
+}, [downloadEula])
+```
+
+- `componentDidUpdate`에서는 `prevProps`와 직접 비교해야 했지만, `useEffect`는 deps 배열이 변경 감지를 대신하므로 코드가 단순해진다
+- 서로 무관한 로직이 하나의 메서드에 뭉쳐 있던 것을 **기능 단위로 분리**할 수 있다
+
 ## 기본 Hooks
 
 ### State Hook (useState)
@@ -170,27 +221,37 @@ function ThemedButton() {
 복잡한 상태 로직 관리에 적합하다. Redux와 유사한 패턴을 컴포넌트 수준에서 사용할 수 있다.
 
 ```javascript
-const initialState = { count: 0 }
+// useState로 관리하면 loading/data/error를 서로 독립적인 상태로 관리 필요
+// useReducer로 묶으면 상태 전이를 명시적으로 제어할 수 있다
+const initialState = { loading: false, data: null, error: null }
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'increment': return { count: state.count + 1 }
-    case 'decrement': return { count: state.count - 1 }
-    default: throw new Error()
+    case 'FETCH_START':   return { loading: true,  data: null,        error: null }
+    case 'FETCH_SUCCESS': return { loading: false, data: action.data,  error: null }
+    case 'FETCH_ERROR':   return { loading: false, data: null,        error: action.error }
+    default: throw new Error(`Unknown action: ${action.type}`)
   }
 }
 
-function Counter() {
+function UserProfile({ userId }) {
   const [state, dispatch] = useReducer(reducer, initialState)
-  return (
-    <>
-      Count: {state.count}
-      <button onClick={() => dispatch({ type: 'increment' })}>+</button>
-      <button onClick={() => dispatch({ type: 'decrement' })}>-</button>
-    </>
-  )
+
+  useEffect(() => {
+    dispatch({ type: 'FETCH_START' })
+    fetch(`/api/users/${userId}`)
+      .then(res => res.json())
+      .then(data => dispatch({ type: 'FETCH_SUCCESS', data }))
+      .catch(error => dispatch({ type: 'FETCH_ERROR', error: error.message }))
+  }, [userId])
+
+  if (state.loading) return <div>Loading...</div>
+  if (state.error)   return <div>에러: {state.error}</div>
+  return <div>{state.data?.name}</div>
 }
 ```
+
+- `useState`였다면 `setLoading(true)`, `setData(null)`, `setError(null)` 3개를 동시에 호출해야 하고, 하나라도 빠트리면 `loading: true`이면서 `error`가 남아있는 불가능한 상태가 된다
 
 ## Hooks vs 클래스 비교
 
