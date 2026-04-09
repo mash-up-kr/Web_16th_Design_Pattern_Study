@@ -166,3 +166,7 @@ export default withHover(
     const UserPanelForTest = withTestingUserUpdate(UserPanel);
     ```
   - 순수 UI는 user와 onUserUpdate만 받고, 테스트에서만 필요한 window 세터는 HOC 한 곳에 둡니다.
+
+### 마무리
+- [일전에 했던 HOC에 대한 생각 정리](https://github.com/refactor-readers/Modern-React-DeepDive/tree/main/%EA%B9%80%EB%B3%B4%EA%B2%BD/03.%EB%A6%AC%EC%95%A1%ED%8A%B8%20%ED%9B%85%20%EA%B9%8A%EA%B2%8C%20%EC%82%B4%ED%8E%B4%EB%B3%B4%EA%B8%B0#032-%EC%82%AC%EC%9A%A9%EC%9E%90-%EC%A0%95%EC%9D%98-%ED%9B%85%EA%B3%BC-%EA%B3%A0%EC%B0%A8-%EC%BB%B4%ED%8F%AC%EB%84%8C%ED%8A%B8-%EC%A4%91-%EB%AC%B4%EC%97%87%EC%9D%84-%EC%8D%A8%EC%95%BC-%ED%95%A0%EA%B9%8C)
+- 디자인 패턴을 공부하면서 이런 개인적인 견해가 얼마나 짧은 생각이었는지 다시 머리를 봉합하게 되는것 같습니다 🤯
