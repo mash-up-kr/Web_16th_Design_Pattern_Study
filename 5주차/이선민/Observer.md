@@ -267,8 +267,10 @@ const useStore = create((set) => ({
   increment: () => set((state) => ({ count: state.count + 1 })),
 }))
 
-// selector로 관심 있는 상태만 구독
+// subscribe: selector로 관심 있는 상태만 구독
 const count = useStore((state) => state.count)
+// publish: publisher는 누가 구독하는지 모름.
+const increment = useStore((state) => state.increment)
 ```
 
 - Provider 없이 모듈에서 직접 store를 생성하고, selector를 통해 필요한 상태만 구독한다
@@ -282,6 +284,28 @@ const count = useStore((state) => state.count)
 | **Recoil** | Provider + Observer | atom을 직접 참조하여 구독 | O (`RecoilRoot`) |
 | **Jotai** | Observer | atom을 직접 참조하여 구독 | X (선택적) |
 | **Zustand** | Pub/Sub | selector로 관심 상태만 구독 | X |
+
+
+### Pub/Sub과 Observer의 장단점
+- 중재자가 없으면(Observer) → 코드가 단순하고 직관적, 대신 atom이 바뀌면 그 atom을 import한 모든 곳을 찾아야 함 (상태를 사용한곳과 setState한 곳 모두 수정 필요)
+  ```javascript
+  const counterAtom = atom('0')
+  const [count, setCount] = useAtom(counterAtom)
+
+  // 여기서 counterAtom의 타입이 string으로 바뀐다면?
+  setCount('3')
+  ```
+- 중재자가 있으면(Pub/Sub) → Publisher·Subscriber가 완전히 분리되어 서로 모르니 결합도 낮음, 대신 publisher → event channel → data 흐름을 따라가야 해서 추적 비용이 있음
+  ```javascript
+  const useStore = create((set) => ({
+    count: '0',
+    increment: () => set((state) => ({ count: String(state.count + 1) })),
+  }))
+
+  // increment사용하는 쪽은 수정 필요 없음
+  const increment = useStore((state) => state.increment)
+  increment()
+  ```
 
 ## 장점
 
