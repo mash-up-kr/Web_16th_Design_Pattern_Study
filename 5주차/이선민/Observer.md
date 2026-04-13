@@ -52,45 +52,6 @@ class Observable {
 - **디버깅 어려움**: Observer 간 실행 순서가 보장되지 않아 복잡한 이벤트 체인에서 추적이 어려울 수 있다
 - **메모리 누수**: `unsubscribe`를 빠트리면 Observer가 해제되지 않아 메모리 누수가 발생할 수 있다
 
-## 실제 사용 예시: 버튼 클릭 이벤트
-
-```javascript
-import { ToastContainer, toast } from 'react-toastify'
-
-function logger(data) {
-  console.log(`${Date.now()} ${data}`)
-}
-
-function toastify(data) {
-  toast(data)
-}
-
-observable.subscribe(logger)
-observable.subscribe(toastify)
-
-export default function App() {
-  function handleClick() {
-    observable.notify('User clicked button!')
-  }
-
-  function handleToggle() {
-    observable.notify('User toggled switch!')
-  }
-
-  return (
-    <div className="App">
-      <Button>Click me!</Button>
-      <FormControlLabel control={<Switch />} />
-      <ToastContainer />
-    </div>
-  )
-}
-```
-
-- `handleClick`이나 `handleToggle` 호출 시 Observable의 `notify()`가 실행된다
-- 등록된 Observer들(`logger`, `toastify`)이 자동으로 이벤트 데이터를 수신한다
-- 각 Observer는 독립적으로 자신의 역할(로깅, 토스트 알림)을 수행한다
-
 ## Observer vs Pub/Sub 패턴
 
 Observer 패턴과 유사하지만 다른 패턴으로 Publish/Subscribe(Pub/Sub) 패턴이 있다.
@@ -298,7 +259,6 @@ const increment = useStore((state) => state.increment)
 | **Jotai** | Observer | atom을 직접 참조하여 구독 | X (선택적) |
 | **Zustand** | Pub/Sub | selector로 관심 상태만 구독 | X |
 
-
 ### Pub/Sub과 Observer의 장단점
 - 중재자가 없으면(Observer) → 코드가 단순하고 직관적, 대신 atom이 바뀌면 그 atom을 import한 모든 곳을 찾아야 함 (상태를 사용한곳과 setState한 곳 모두 수정 필요)
   ```javascript
@@ -319,6 +279,107 @@ const increment = useStore((state) => state.increment)
   const increment = useStore((state) => state.increment)
   increment()
   ```
+
+## 실제 사용 예시
+### 버튼 클릭 이벤트
+
+```javascript
+import { ToastContainer, toast } from 'react-toastify'
+
+function logger(data) {
+  console.log(`${Date.now()} ${data}`)
+}
+
+function toastify(data) {
+  toast(data)
+}
+
+observable.subscribe(logger)
+observable.subscribe(toastify)
+
+export default function App() {
+  function handleClick() {
+    observable.notify('User clicked button!')
+  }
+
+  function handleToggle() {
+    observable.notify('User toggled switch!')
+  }
+
+  return (
+    <div className="App">
+      <Button>Click me!</Button>
+      <FormControlLabel control={<Switch />} />
+      <ToastContainer />
+    </div>
+  )
+}
+```
+
+- `handleClick`이나 `handleToggle` 호출 시 Observable의 `notify()`가 실행된다
+- 등록된 Observer들(`logger`, `toastify`)이 자동으로 이벤트 데이터를 수신한다
+- 각 Observer는 독립적으로 자신의 역할(로깅, 토스트 알림)을 수행한다
+
+### RxJS (ReactiveX)
+
+**Observer 패턴 + 이터레이터 패턴 + 함수형 프로그래밍**을 조합한 반응형 프로그래밍 라이브러리. 시간에 따라 흐르는 이벤트의 **스트림(stream)** 을 다룬다.
+
+**핵심 개념**
+
+| 요소 | 역할 |
+|---|---|
+| `Observable` | 시간에 따라 발생하는 값의 스트림 (클릭, fetch 응답, 타이머 등) |
+| `Observer` | 스트림의 값을 소비하는 구독자 (`next`, `error`, `complete` 핸들러) |
+| `Subscription` | 구독 연결. `unsubscribe()`로 해제 가능 |
+| `Operator` | 스트림을 변환·결합하는 순수 함수 (`map`, `filter`, `debounceTime` 등) |
+| `Subject` | Observable + Observer를 겸하는 객체. 멀티캐스트 가능 |
+
+**기본 사용 예시**
+
+```javascript
+import { fromEvent } from 'rxjs'
+import { map, filter, debounceTime } from 'rxjs/operators'
+
+// 1. input의 입력 이벤트를 스트림으로 변환 (Observable 생성)
+const input$ = fromEvent(document.querySelector('#search'), 'input')
+
+// 2. 파이프라인으로 스트림 변환
+const search$ = input$.pipe(
+  debounceTime(300),                       // 300ms 동안 입력 멈추면 통과
+  map(event => event.target.value),        // 입력값만 추출
+  filter(text => text.length >= 2)         // 2글자 이상만 통과
+)
+
+// 3. 구독
+const subscription = search$.subscribe({
+  next: (value) => console.log('검색:', value),
+  error: (err) => console.error(err),
+  complete: () => console.log('완료'),
+})
+
+// 구독 해제
+subscription.unsubscribe()
+```
+
+- 기존 Observer 패턴이 "이벤트 발생 → 알림" 수준이라면, RxJS는 **스트림을 데이터 파이프라인처럼 가공**할 수 있다
+- `debounceTime`, `throttleTime`, `switchMap` 등 시간·비동기를 다루는 연산자가 풍부하다
+
+**일반 Observer 패턴 vs RxJS**
+
+| | 기본 Observer | RxJS |
+|---|---|---|
+| 데이터 전달 | 단순히 notify 한 번 | 시간축을 가진 스트림 |
+| 변환 | 구독자 내부에서 처리 | Operator로 스트림 자체를 변환 |
+| 오류 처리 | 별도 규약 없음 | `error` 채널로 표준화 |
+| 종료 | 명시적 해제만 | `complete` 신호로 스트림 종료 가능 |
+| 비동기 제어 | 직접 구현 | `debounce`, `switchMap` 등 내장 |
+
+**어디에 쓰이나**
+
+- 검색창 자동완성 (입력 debounce + 이전 요청 취소)
+- WebSocket·SSE 실시간 데이터 처리
+- 여러 비동기 이벤트의 조합 (`combineLatest`, `merge`, `zip`)
+- Angular의 HTTP 통신과 이벤트 시스템 기본 구조
 
 ## 참고자료
 
