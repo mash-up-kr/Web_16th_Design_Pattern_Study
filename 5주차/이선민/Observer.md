@@ -39,6 +39,19 @@ class Observable {
 - `subscribe`로 Observer(함수)를 등록하고, `notify`가 호출되면 등록된 모든 Observer에 데이터를 전달한다
 - `unsubscribe`로 더 이상 알림이 필요 없는 Observer를 제거할 수 있다
 
+## 장점
+
+- **관심사의 분리**: Observable은 이벤트 발생만, Observer는 수신한 데이터 처리만 담당한다
+- **단일 책임 원칙**: 각 Observer가 자신만의 역할을 수행하므로 책임이 명확하다
+- **느슨한 결합**: Observable과 Observer가 독립적이므로 언제든지 구독/해제할 수 있다
+- **유연한 확장**: 새로운 Observer를 추가해도 기존 코드를 수정할 필요가 없다
+
+## 단점
+
+- **성능 이슈**: Observer가 많아질수록 `notify()` 호출 시 모든 Observer에 알림을 전파하므로 성능이 저하될 수 있다
+- **디버깅 어려움**: Observer 간 실행 순서가 보장되지 않아 복잡한 이벤트 체인에서 추적이 어려울 수 있다
+- **메모리 누수**: `unsubscribe`를 빠트리면 Observer가 해제되지 않아 메모리 누수가 발생할 수 있다
+
 ## 실제 사용 예시: 버튼 클릭 이벤트
 
 ```javascript
@@ -90,7 +103,7 @@ Pub/Sub 패턴:     Publisher ──> Event Channel ──> Subscriber
                   (서로 모름)      (중재자)       (서로 모름)
 ```
 
-### 핵심 차이: 누가 누구를 아는가
+### 핵심 차이
 
 - **Observer 패턴**: Subject(여기서는 Observable)가 Observer 목록을 직접 관리한다. Subject는 자신을 구독하는 Observer가 누구인지 알고 있다.
 - **Pub/Sub 패턴**: Publisher와 Subscriber가 서로의 존재를 모른다. 중간에 Event Channel(Message Broker)이 메시지를 중재한다.
@@ -306,19 +319,6 @@ const increment = useStore((state) => state.increment)
   const increment = useStore((state) => state.increment)
   increment()
   ```
-
-## 장점
-
-- **관심사의 분리**: Observable은 이벤트 발생만, Observer는 수신한 데이터 처리만 담당한다
-- **단일 책임 원칙**: 각 Observer가 자신만의 역할을 수행하므로 책임이 명확하다
-- **느슨한 결합**: Observable과 Observer가 독립적이므로 언제든지 구독/해제할 수 있다
-- **유연한 확장**: 새로운 Observer를 추가해도 기존 코드를 수정할 필요가 없다
-
-## 단점
-
-- **성능 이슈**: Observer가 많아질수록 `notify()` 호출 시 모든 Observer에 알림을 전파하므로 성능이 저하될 수 있다
-- **디버깅 어려움**: Observer 간 실행 순서가 보장되지 않아 복잡한 이벤트 체인에서 추적이 어려울 수 있다
-- **메모리 누수**: `unsubscribe`를 빠트리면 Observer가 해제되지 않아 메모리 누수가 발생할 수 있다
 
 ## 참고자료
 
