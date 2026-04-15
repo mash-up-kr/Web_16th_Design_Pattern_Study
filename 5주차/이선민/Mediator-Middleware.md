@@ -67,6 +67,7 @@ app.use('/', (req, res, next) => {
 - 각 미들웨어는 `req`, `res`를 직접 주고받지 않는다
 - Express가 중재자로서 `next()`를 통해 요청을 순서대로 미들웨어에 전달한다
 - 미들웨어끼리는 서로의 존재를 모른다
+
 ![alt text](image.png)
 
 ```
