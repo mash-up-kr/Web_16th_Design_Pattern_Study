@@ -5,16 +5,8 @@
 - 호출자(Invoker)는 명령의 구체적인 구현을 모른 채 `execute()`만 호출한다
 - 실행 취소(undo), 작업 큐, 로깅, 예약 실행 등에 활용된다
 
-## 구성 요소
 
-| 요소 | 역할 |
-|---|---|
-| `Command` | 실행할 작업을 캡슐화한 객체. `execute()` 메서드를 가진다 |
-| `Invoker` | 명령을 실행시키는 객체 (예: `OrderManager`) |
-| `Receiver` | 실제 작업이 수행되는 대상 (예: `orders` 배열) |
-| `Client` | Command 객체를 생성하여 Invoker에게 전달하는 주체 |
-
-## 문제 상황: 커맨드 패턴 없이 구현
+## 커맨드 패턴 없이 구현
 
 `OrderManager`에 모든 작업을 메서드로 직접 정의한 경우를 보자.
 
@@ -139,6 +131,18 @@ function PlaceOrderCommand(order, id) {
     orders => { orders.splice(orders.indexOf(id), 1); return `주문 취소됨` }
   )
 }
+
+
+const cmd1 = PlaceOrderCommand('Pad Thai', '1234')
+const cmd2 = PlaceOrderCommand('Pizza', '5678')
+
+manager.execute(cmd1) // manager.orders  === ['1234'], manager.history === [cmd1]
+
+manager.execute(cmd2) // manager.orders  === ['1234', '5678'], manager.history === [cmd1, cmd2]
+
+manager.undo()
+// manager.orders  === ['1234']   -> '5678'만 사라짐
+// manager.history === [cmd1]
 ```
 
 ## 활용 예시: 작업 큐
@@ -162,17 +166,24 @@ class CommandQueue {
     }
   }
 }
+
+const queue = new CommandQueue()
+const orders = []
+
+queue.enqueue(PlaceOrderCommand('Pad Thai', '1234'))
+queue.enqueue(PlaceOrderCommand('Pizza', '5678'))
+
+queue.processAll(orders).then(() => console.log(orders))
+// 결과: orders === ['1234', '5678']
 ```
 
 - API 요청 배치 처리, 게임의 매크로/리플레이, 트랜잭션 처리 등에 활용
 
 ## 장점
 
-- **느슨한 결합**: Invoker는 Command의 구체적 구현을 알 필요가 없다
+- **느슨한 결합**: 호출자(Invoker)는 Command의 구체적 구현을 알 필요가 없다
 - **확장성**: 새 명령을 추가할 때 기존 코드를 수정하지 않는다 (OCP 준수)
 - **명령의 객체화**: 명령을 매개변수로 전달하거나 큐에 담거나 지연 실행할 수 있다
-- **실행 취소 / 재실행 구현 용이**: 명령 이력을 저장해 역으로 실행할 수 있다
-- **로깅·감사(audit)**: 실행된 명령을 기록할 수 있다
 
 ## 단점
 
@@ -185,7 +196,6 @@ class CommandQueue {
 - 실행 취소(undo/redo) 기능이 필요한 경우 (텍스트 에디터, 그래픽 툴)
 - 작업을 큐에 담아 예약·지연 실행이 필요한 경우
 - 명령 실행 이력을 로깅·감사해야 하는 경우
-- 매크로/리플레이처럼 명령 시퀀스를 저장·재생해야 하는 경우
 
 ## 참고자료
 
