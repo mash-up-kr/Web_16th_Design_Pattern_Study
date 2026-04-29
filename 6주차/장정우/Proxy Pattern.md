@@ -182,6 +182,49 @@ export async function POST(req: Request) {
 }
 ```
 
+### 더 일반적인 활용 사례 — 미들웨어
+
+사실 Proxy 패턴의 가장 흔한 실무 적용은 **미들웨어**이다. Next.js, Express, Koa 등의 프레임워크에서 제공하는 미들웨어는 본질적으로 Proxy 패턴의 구현체이다. 요청이 실제 핸들러에 도달하기 **전에** 끼어들어, 부수 작업(인증, 로깅, 압축 등)을 처리한 뒤 통과시킬지 차단할지 결정한다.
+
+```
+[클라이언트 요청] ──> [Auth Middleware] ──> [Logging Middleware] ──> [실제 핸들러]
+                         │                       │
+                         ├─ 토큰 검증            ├─ 로그 기록
+                         └─ 권한 체크            └─ 다음으로 위임
+```
+
+특히 **인증 미들웨어는 Protection Proxy의 교과서적인 사례**이다. Next.js의 `middleware.ts`로 작성하면 다음과 같다.
+
+```ts
+// middleware.ts
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+export async function middleware(req: NextRequest) {
+  const token = req.cookies.get('session')?.value
+
+  // 인증되지 않으면 차단 — Protection Proxy
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', req.url))
+  }
+
+  const session = await verifySession(token)
+  if (!session) {
+    return NextResponse.redirect(new URL('/login', req.url))
+  }
+
+  // 통과 — 실제 핸들러로 위임
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/admin/:path*'],
+}
+```
+
+요청은 실제 페이지/API 핸들러에 도달하기 전에 이 미들웨어를 거친다. 인증되지 않으면 핸들러는 아예 실행되지 않는다.  
+호출자(클라이언트)는 단순히 페이지를 요청했을 뿐이지만, 실제로는 그 사이에 대리인이 끼어들어 권한을 검증한다.
+
 ## [How] Proxy Pattern은 어떻게 구현하는가?
 
 핵심은 **원본 객체에 대한 접근을 가로채서, 추가 로직(검증, 로깅, 캐싱 등)을 수행한 후 원본에 위임하는 것**이다.
